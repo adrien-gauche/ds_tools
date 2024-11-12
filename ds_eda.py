@@ -330,12 +330,12 @@ def plot_categorical(df, x, y, hue, palette="muted"):
     
 #plot_categorical(train_data, "Pclass", "Survived", "Sex")
 
-def plot_categorical_relation(df):
+def plot_categorical_relation(df, category_column):
     for col in df.select_dtypes(exclude=["number", "datetime"]).columns:
 
         plt.figure(figsize=(5, 1))  # Create a new figure for each column
         sns.heatmap(
-            pd.crosstab(df["EA FPI\n>ou= à 1 EA 0/1"], df[col]), annot=True, fmt="d"
+            pd.crosstab(df[category_column], df[col]), annot=True, fmt="d"
         )
         plt.xticks(rotation=45, ha="right")
         plt.show()
@@ -343,57 +343,54 @@ def plot_categorical_relation(df):
 
 ### NUMERICAL DATA ###
 #    https://seaborn.pydata.org/tutorial/distributions.html
-#positive_df = df[df["EA FPI\n>ou= à 1 EA 0/1"] == True]
-#negative_df = df[df["EA FPI\n>ou= à 1 EA 0/1"] == False]
-#
-## Loop through each column in blood_columns
-#for col in df.select_dtypes(include=["number"]).columns:
-#    # https://stackoverflow.com/questions/23199796/detect-and-exclude-outliers-in-a-pandas-dataframe
-#    n_standard_deviation = 3  # from mean
-#
-#    positive_clean = positive_df[
-#        (
-#            np.abs(stats.zscore(positive_df[col], nan_policy="omit"))
-#            < n_standard_deviation
-#        )
-#    ]
-#    negative_clean = negative_df[
-#        (
-#            np.abs(stats.zscore(negative_df[col], nan_policy="omit"))
-#            < n_standard_deviation
-#        )
-#    ]
-#
-#    fig, ax = plt.subplots(
-#        figsize=(6, 2)
-#    )  # Create a new figure and axis for each column
-#
-#    # Plot positive and negative distributions using seaborn's histplot
-#    sns.histplot(
-#        positive_clean[col],
-#        label="Positive",
-#        kde=True,
-#        stat="percent",
-#        common_norm=True,
-#        color="red",
-#        alpha=0.25,
-#        ax=ax,
-#    )
-#    sns.histplot(
-#        negative_clean[col],
-#        label="Negative",
-#        kde=True,
-#        stat="percent",
-#        common_norm=True,
-#        color="blue",
-#        alpha=0.25,
-#        ax=ax,
-#    )
-#
-#    ax.set_title(col)  # Set title to the column name
-#    ax.legend()  # Add a legend
-#    plt.tight_layout()  # Adjust layout for better fit
-#    plt.show()  # Display the plot
+def plot_numerical_data(df, category_column, standard_deviation=None):
+    """
+    Trace la distribution des colonnes numériques d'un DataFrame par catégorie.
+    
+    Args:
+        df (pd.DataFrame): Le DataFrame contenant les données.
+        category_column (str): La colonne catégorielle par laquelle les données seront séparées.
+        standard_deviation (float): Le seuil d'écart-type pour filtrer les valeurs aberrantes.
+    """
+    numeric_columns = df.select_dtypes(include=["number"]).columns
+    
+    # Supprimer category_column des colonnes numériques si elle est présente
+    numeric_columns = [col for col in numeric_columns if col != category_column]
+    
+    for col in numeric_columns:
+        fig, ax = plt.subplots(figsize=(8, 4))  # Nouveau graphique pour chaque colonne
+
+        # Boucle sur chaque catégorie dans la colonne spécifiée
+        for category in df[category_column].unique():
+            category_df = df[df[category_column] == category]
+            
+            # Filtrer les valeurs en dehors des seuils de déviation standard
+            if standard_deviation is None:
+                category_clean = category_df
+            else:
+                category_clean = category_df[
+                    (
+                        np.abs(stats.zscore(category_df[col], nan_policy="omit"))
+                        < standard_deviation
+                    )
+                ]
+
+            # Tracer la distribution de la catégorie courante
+            sns.histplot(
+                category_clean[col],
+                label=f"Category {category}",
+                kde=True,
+                stat="percent",
+                common_norm=True,
+                alpha=0.25,
+                ax=ax,
+            )
+
+        ax.set_title(f"Distribution of {col} by Category")  # Titre avec le nom de la colonne
+        ax.legend(title=category_column)  # Ajouter une légende avec le nom de la colonne de catégories
+        plt.tight_layout()  # Ajuster la disposition pour une meilleure lisibilité
+        plt.show()  # Afficher le graphique
+        # plt.savefig(f"fig\\histplot_{col}_category_{category}.png")  # Enregistrer si besoin
 
 #sns.pairplot(df[columns_sang].select_dtypes(include=["number"]))
 
